@@ -1,7 +1,7 @@
 import time
 import random
 
-ids = ["039284765", "111111111"]
+ids = ["039284765", "336362892"]
 
 
 class PacmanController:
@@ -10,11 +10,11 @@ class PacmanController:
     def __init__(self, state, steps):
         """Initialize controller for given the initial setting.
         This method MUST terminate within the specified timeout."""
-        # print('COMPLETE init ')
+        print('COMPLETE init ')
 
     def choose_next_action(self, state):
         """Choose next action for pacman controller given the current state.
         Action should be returned in the format described previous parts of the project.
         This method MUST terminate within the specified timeout."""
-        # print('COMPLETE choose_next_action')
+        print('COMPLETE choose_next_action')
 
