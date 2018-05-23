@@ -3,7 +3,7 @@ import random
 import mdp
 from copy import deepcopy
 
-ids = ["039284765", "336362892"]
+ids = ["--", "--"]
 PILL_CONSTANT = 1
 PILL_CODE = 11
 WALL_CODE = 99
@@ -15,6 +15,7 @@ PROBABILITIES = {"red": 0.9, "green": 0.7, "blue": 0.4, "yellow": 0.4}
 BLOCKING_CODES = (20, 21, 30, 31, 40, 41, 50, 51, 99)
 LOSS_INDEXES =   (20, 21, 30, 31, 40, 41, 50, 51, 71, 77)
 COLOR_CODES = {"red": 50, "green": 40, "blue": 20, "yellow": 30}
+DEBUG_PRINT = True
 
 
 
@@ -122,7 +123,8 @@ class PacmanController(mdp.MDP):
         self.steps = steps
         self.reward = reward_grid
         self.U = mdp.value_iteration(self)
-        print(mdp.best_policy(self,self.U))
+        self.policy_eval = mdp.policy_iteration(self)
+        self.best_policy = mdp.best_policy(self,self.U)
 
 
         print('COMPLETE init ')
@@ -174,6 +176,12 @@ class PacmanController(mdp.MDP):
         """Choose next action for pacman controller given the current state.
         Action should be returned in the format described previous parts of the project.
         This method MUST terminate within the specified timeout."""
+        self.state, self.special_things = problem_to_state(state)
+        # check if PACMAN is still in the game
+        if not "pacman" in self.special_things:
+            return "reset"
+        #return self.policy_eval[self.special_things["pacman"]]
+        return self.best_policy[self.special_things["pacman"]]
         print('COMPLETE choose_next_action')
 
 
