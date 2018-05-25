@@ -7,7 +7,7 @@ from copy import deepcopy
 ids = ["--", "--"]
 WALL_CODE = 99
 ACT_LIST = ["U","D","L","R","reset"]
-SPECIAL_THINGS = ["green","red","blue","yellow"]
+GHOSTS = ["green","red","blue","yellow"]
 BLOCKED_DOTS = [11,21,31,41,51,71]
 class PacmanController(mdp.MDP):
     """This class is a controller for a pacman agent."""
@@ -47,7 +47,7 @@ class PacmanController(mdp.MDP):
         num_ghosts = 0
         num_dots = 0
         for i in special_things:
-            if i in SPECIAL_THINGS:
+            if i in GHOSTS:
                 num_ghosts+=1
 
         for i in state_of_board:
