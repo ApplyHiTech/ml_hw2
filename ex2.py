@@ -3,6 +3,7 @@ import random
 import checker
 import mdp
 from copy import deepcopy
+import search
 
 ids = ["--", "--"]
 WALL_CODE = 99
@@ -13,9 +14,15 @@ class PacmanController(mdp.MDP):
     """This class is a controller for a pacman agent."""
 
     def __init__(self, state, steps):
+        # measure time it takes to finish the constructor:
+        start_time = time.time()
         self.actlist = ACT_LIST
-        self.states,self.rewards,self.max_dots,self.max_ghosts = self.generate_ab_states(state)
+        simple_problem_solving_agent = search.breadth_first_search(search.Problem(initial=state))
+        self.states,self.rewards,self.max_dots,self.max_ghosts, self.special_things = self.generate_ab_states(state)
         self.steps = steps
+        self.elapsed_time = time.time() - start_time
+        if self.elapsed_time >= 60:
+            print("Constructor is taking too long" )
         return
 
     def generate_ab_states(self,state):
@@ -38,7 +45,7 @@ class PacmanController(mdp.MDP):
 
                 states+=new_state
 
-        return states,rewards,max_dots,max_ghosts
+        return states,rewards,max_dots,max_ghosts, special_things
 
 
     # Takes a state and generates a feature vector for the abstract state.
@@ -59,6 +66,11 @@ class PacmanController(mdp.MDP):
         return ab_state,special_things
 
 
+    def T(self, state, action):
+        # assume 'state' is in our feature representation:
+        """Transition model. From a state and an action, return a list
+        of (probability, result-state) pairs."""
+        #return [1, ?]
 
     def choose_next_action(self, state):
         ab_state,special_things = self.get_abstract_state(state)
