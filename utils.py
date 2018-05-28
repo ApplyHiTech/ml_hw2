@@ -106,7 +106,7 @@ def shuffled(iterable):
 
 
 def histogram(values, mode=0, bin_function=None):
-    """Return a list of (value, count) pairs, summarizing the input values.
+    """Ret  urn a list of (value, count) pairs, summarizing the input values.
     Sorted by increasing value, or if mode=1, by decreasing count.
     If bin_function is given, map it over values first."""
     if bin_function:
