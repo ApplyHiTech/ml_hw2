@@ -16,7 +16,6 @@ COLOR_CODES = {"red": 50, "green": 40, "blue": 20, "yellow": 30}
 #     print('simulation time out')
 #     raise Exception("Timed out!")
 
-
 def problem_to_state(problem):
     """
 
@@ -35,7 +34,7 @@ def problem_to_state(problem):
             state_to_return[(number_of_row, number_of_column)] = cell
             if cell == 66:
                 special_things["pacman"] = (number_of_row, number_of_column)
-                print("Pacman position is:", number_of_row, number_of_column)
+                #print("Pacman position is:", number_of_row, number_of_column)
             elif cell == 50 or cell == 51:
                 special_things["red"] = (number_of_row, number_of_column)
             elif cell == 40 or cell == 41:
@@ -46,6 +45,7 @@ def problem_to_state(problem):
                 special_things["blue"] = (number_of_row, number_of_column)
             elif cell == 77 or cell == 71:
                 special_things["poison"].append((number_of_row, number_of_column))
+    #print(state_to_return)
     return state_to_return, special_things
 
 
@@ -86,6 +86,8 @@ class Evaluator:
         for i in range(len(self.original_problem)):
             for j in range(len(self.original_problem[0])):
                 if self.state[(i, j)] % 10 == 1:
+
+
                     finished = False
                     breaking_flag = True
                     break
@@ -96,6 +98,7 @@ class Evaluator:
     def reset_field(self):
         self.state, self.special_things = problem_to_state(self.original_problem)
         self.accumulated_reward += RESET_CONSTANT
+
         return
 
     def move_pacman(self, action):
@@ -209,6 +212,7 @@ class Evaluator:
     def evaluate_agent(self):
         for step in range(self.steps):
             action = self.agent.choose_next_action(self.state_to_agent())
+            print("Next Action: " + action)
             if not is_action_legal(action):
                 raise Exception("illegal action!", action, "happened at step number:", step)
             self.change_state_after_action(action)
@@ -218,36 +222,22 @@ class Evaluator:
 if __name__ == '__main__':
     problems = (
 
-        ((
-            (99, 99, 99),
-            (99, 11, 99),
-            (99, 66, 99),
-            (99, 99, 99)
-         ), 10),
 
         ((
             (99, 99, 99, 99, 99),
-            (99, 11, 11, 40, 99),
-            (99, 31, 10, 10, 99),
+            (99, 10, 11, 11, 99),
+            (99, 10, 11, 66, 99),
             (99, 11, 11, 11, 99),
-            (99, 11, 77, 11, 99),
-            (99, 11, 11, 66, 99),
             (99, 99, 99, 99, 99)
-        ), 20),
+        ), 10),
 
-        ((
-         (99, 99, 99, 99, 99, 99, 99),
-         (99, 11, 11, 66, 11, 11, 99),
-         (99, 11, 11, 11, 11, 11, 99),
-         (99, 11, 11, 71, 11, 51, 99),
-         (99, 11, 11, 11, 11, 11, 99),
-         (99, 11, 11, 11, 11, 11, 99),
-         (99, 99, 99, 99, 99, 99, 99),
-         ), 50)
+
 
     )
 
+
     results = []
+
 
     for problem, num_of_steps in problems:
         my_eval = Evaluator(ex2.PacmanController(problem, num_of_steps), problem, num_of_steps)
@@ -255,4 +245,10 @@ if __name__ == '__main__':
 
     for number, result in enumerate(results):
         print("the result for input", number + 1, "is", result)
+
+    """
+    Create simulator to compute problems 5x and then average out results.
+    
+    """
+
 

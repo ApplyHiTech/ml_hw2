@@ -46,7 +46,7 @@ class PacmanController(mdp.MDP):
         self.pi = mdp.best_policy(self,self.U)
 
         # print(mdp.best_policy(self, self.U))
-
+        print("end of initialization\n\n\n\n")
         return
 
     def compute_states(self):
@@ -62,9 +62,9 @@ class PacmanController(mdp.MDP):
             #j is just a counter to make sure we avoid infinite loop.
             j += 1
             temp = frontier.pop()
-            explored.add(checker.Evaluator.state_to_agent(temp))
 
             if "pacman" in temp.special_things and temp.special_things["pacman"] is not 'dead':
+                explored.add(checker.Evaluator.state_to_agent(temp))
 
                 # children
                 curr_evalU = deepcopy(temp)
@@ -95,6 +95,7 @@ class PacmanController(mdp.MDP):
                         print("WAHOO\n\n\n\n")
                         print("FINISHED------")
                         #print(R)
+                        R[curr_state]+=50
 
                         #return explored, T, R We should exit here, but then we have an issue with missing some states.
 
@@ -102,13 +103,14 @@ class PacmanController(mdp.MDP):
                         frontier.append(child)
 
             print("Finished loop: States: "+ str(len(explored)) +" Queue: " + str(len(frontier)))
-        print(R)
+        #print(R)
         return explored, T, R
 
     def T(self, state, action):
-
-        return [self.transitions[(state, action)]]
-
+        if (state,action) in self.transitions:
+            return [self.transitions[(state, action)]]
+        else:
+            return [(1,state)]
     def R(self, state):
         if state in self.reward:
             return self.reward[state]
