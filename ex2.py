@@ -4,6 +4,7 @@ import checker
 import mdp
 from utils import FIFOQueue
 from copy import deepcopy
+import search
 
 ids = ["--", "--"]
 WALL_CODE = 99
@@ -26,6 +27,7 @@ def count_dots(state):
 
 class PacmanController(mdp.MDP):
     """This class is a controller for a pacman agent."""
+
 
     def __init__(self, problem, steps):
         self.original_problem = deepcopy(problem)
@@ -77,6 +79,7 @@ class PacmanController(mdp.MDP):
                 checker.Evaluator.change_state_after_action(curr_evalR, "R")
                 checker.Evaluator.change_state_after_action(curr_evalD, "D")
 
+
                 child_evals = [curr_evalU, curr_evalL, curr_evalR, curr_evalD]
 
                 curr_state = checker.Evaluator.state_to_agent(temp)
@@ -98,6 +101,7 @@ class PacmanController(mdp.MDP):
                         R[curr_state]+=50
 
                         #return explored, T, R We should exit here, but then we have an issue with missing some states.
+
 
                     if checker.Evaluator.state_to_agent(child) not in explored and child not in frontier:
                         frontier.append(child)
