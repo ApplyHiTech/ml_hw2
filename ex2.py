@@ -76,7 +76,16 @@ class PacmanController(mdp.MDP):
                 # apply different actions to each child
                 checker.Evaluator.change_state_after_action(curr_evalU, "U")
                 checker.Evaluator.change_state_after_action(curr_evalL, "L")
+                tmp_reward = curr_evalR.accumulated_reward
                 checker.Evaluator.change_state_after_action(curr_evalR, "R")
+                # handle special case where all the dots are eaten but the method resets the board:
+                if curr_evalR.accumulated_reward - tmp_reward >= 30:
+                    # we force apply the state after applying the specific action which caused a reset.
+                    empty_state = deepcopy(temp)
+                    empty_state.special_things["pacman"] = (temp.special_things["pacman"][0], temp.special_things["pacman"][1] + 1)
+                    empty_state.state[temp.special_things["pacman"]] = 10
+                    empty_state.state[empty_state.special_things["pacman"]] = 66
+                    R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalR.accumulated_reward
                 checker.Evaluator.change_state_after_action(curr_evalD, "D")
 
 
@@ -98,7 +107,7 @@ class PacmanController(mdp.MDP):
                         print("WAHOO\n\n\n\n")
                         print("FINISHED------")
                         #print(R)
-                        R[curr_state]+=50
+                        #R[curr_state]+=50
 
                         #return explored, T, R We should exit here, but then we have an issue with missing some states.
 
