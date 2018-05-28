@@ -2,72 +2,157 @@ import time
 import random
 import checker
 import mdp
+from utils import FIFOQueue
 from copy import deepcopy
 
 ids = ["--", "--"]
 WALL_CODE = 99
-ACT_LIST = ["U","D","L","R","reset"]
-GHOSTS = ["green","red","blue","yellow"]
-BLOCKED_DOTS = [11,21,31,41,51,71]
+ACT_LIST = ["U", "D", "L", "R", "reset"]
+GHOSTS = ["green", "red", "blue", "yellow"]
+BLOCKED_DOTS = [21, 31, 41, 51, 71]
+
+
+def count_dots(state):
+    l = state.values()
+    # print(state)
+    # print(l)
+    j = 0
+    for i in l:
+        if i == 11:
+            j += 1
+
+    return j
+
+
 class PacmanController(mdp.MDP):
     """This class is a controller for a pacman agent."""
 
-    def __init__(self, state, steps):
-        self.actlist = ACT_LIST
-        self.states,self.rewards,self.max_dots,self.max_ghosts = self.generate_ab_states(state)
+    def __init__(self, problem, steps):
+        self.original_problem = deepcopy(problem)
+        start_state, special_things = checker.problem_to_state(problem)
         self.steps = steps
+        self.current_state_of_board, self.current_special_things = checker.problem_to_state(problem)
+        self.accumulated_reward = 0
+        self.eval = checker.Evaluator(0, problem, steps)
+
+        self.act_list = ACT_LIST
+        all_states, trans_dict, rewards = self.compute_states()
+        mdp.MDP.__init__(self,init=start_state, actlist=["U", "D", "R", "L"], terminals=None, transitions=trans_dict, states=all_states, )
+
+        self.reward=rewards #mpd rewards dictionary
+
+        self.U = mdp.value_iteration(self)
+
+        self.pi = mdp.best_policy(self,self.U)
+
+        # print(mdp.best_policy(self, self.U))
+
         return
 
-    def generate_ab_states(self,state):
-        states = []
-        ab_state,special_things = self.get_abstract_state(state)
-        num_dots = ab_state[0]
-        num_ghosts = ab_state[1]
-        max_dots = num_dots
-        max_ghosts = num_ghosts
-        rewards = {}
+    def compute_states(self):
+        j = 0
+        # BFS
+        a_eval = deepcopy(self.eval)
+        frontier = FIFOQueue()
+        frontier.append(a_eval)  # Eval
+        explored = set()  # Eval.state
+        T = {}
+        R = {}
+        while frontier and j < 10000:
+            #j is just a counter to make sure we avoid infinite loop.
+            j += 1
+            temp = frontier.pop()
+            explored.add(checker.Evaluator.state_to_agent(temp))
 
-        for i in range(0,num_dots+1):
-            for j in range(0,num_ghosts+1):
-                # state vector = num_dots, num_ghosts,
-                new_state = [(i,j)]
-                if i == 0:
-                    rewards[(i,j)] = 50+max_dots
-                else:
-                    rewards[(i,j)] = max_dots-i #number of dots left.
+            if "pacman" in temp.special_things and temp.special_things["pacman"] is not 'dead':
 
-                states+=new_state
+                # children
+                curr_evalU = deepcopy(temp)
+                curr_evalL = deepcopy(temp)
+                curr_evalR = deepcopy(temp)
+                curr_evalD = deepcopy(temp)
+                # apply different actions to each child
+                checker.Evaluator.change_state_after_action(curr_evalU, "U")
+                checker.Evaluator.change_state_after_action(curr_evalL, "L")
+                checker.Evaluator.change_state_after_action(curr_evalR, "R")
+                checker.Evaluator.change_state_after_action(curr_evalD, "D")
 
-        return states,rewards,max_dots,max_ghosts
+                child_evals = [curr_evalU, curr_evalL, curr_evalR, curr_evalD]
 
+                curr_state = checker.Evaluator.state_to_agent(temp)
 
-    # Takes a state and generates a feature vector for the abstract state.
-    def get_abstract_state(self,state):
-        state_of_board, special_things = checker.problem_to_state(state)
-        num_ghosts = 0
-        num_dots = 0
-        for i in special_things:
-            if i in GHOSTS:
-                num_ghosts+=1
+                R[curr_state] = temp.accumulated_reward
 
-        for i in state_of_board:
-            if state_of_board[i] == 11 or state_of_board[i] in BLOCKED_DOTS:
-                num_dots +=1
-        # dist_nearest_dot = nearest_dot(pacman,state_of_board)
-        # state feature vector
-        ab_state = (num_dots, num_ghosts)
-        return ab_state,special_things
+                T[(curr_state, "U")] = (1, checker.Evaluator.state_to_agent(curr_evalU))
+                T[(curr_state, "L")] = (1, checker.Evaluator.state_to_agent(curr_evalL))
+                T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(curr_evalR))
+                T[(curr_state, "D")] = (1, checker.Evaluator.state_to_agent(curr_evalD))
+                for child in child_evals:
+                    # If all dots are eaten, the board resets.
+                    # So, we check to see if any action resulted in a reset board.
+                    # If yes, we have found a solution.
+                    if child.state == self.eval.state and j > 1:
+                        print("WAHOO\n\n\n\n")
+                        print("FINISHED------")
+                        #print(R)
 
+                        #return explored, T, R We should exit here, but then we have an issue with missing some states.
 
+                    if checker.Evaluator.state_to_agent(child) not in explored and child not in frontier:
+                        frontier.append(child)
+
+            print("Finished loop: States: "+ str(len(explored)) +" Queue: " + str(len(frontier)))
+        print(R)
+        return explored, T, R
+
+    def T(self, state, action):
+
+        return [self.transitions[(state, action)]]
+
+    def R(self, state):
+        if state in self.reward:
+            return self.reward[state]
+        else:
+            return 0
 
     def choose_next_action(self, state):
-        ab_state,special_things = self.get_abstract_state(state)
-        print(ab_state)
-
+        state_of_board, special_things = checker.problem_to_state(state)
         if not "pacman" in special_things:
             # check if PACMAN is still in the game
+            print("HELLO buddy")
             return "reset"
         # if pacman is still in the game, then, choose best next step.
-        # this is temporarily defaulted to be Up for all moves!
-        return "U"
+        return (self.pi[state])
 
+    def actions(self,state):
+
+        return ["U","D","L","R"]
+
+    def value_iteration(self, epsilon=0.001):
+        """Solving an MDP by value iteration. [Figure 17.4]"""
+
+        U1 = {s: 0 for s in self.states}
+        print(len(U1))
+        R, T, gamma = self.R, self.T, self.gamma
+        j=0
+        while j<100:
+            j+=1
+            U = U1.deepcopy()
+            delta = 0
+            for s in self.states:
+                print (s)
+                #print (self.actions(s))
+                max_val = 0
+                for a in ["U", "D", "L", "R"]:
+                    p,s1 = self.T[(s,a)]
+
+                    if max_val < p*U[s1]:
+
+                        max_val = p*U[s1]
+
+                U1[s] = self.R[s] + gamma * max_val
+
+                delta = max(delta, abs(U1[s] - U[s]))
+
+            if delta < epsilon * (1 - gamma) / gamma:
+                return U
