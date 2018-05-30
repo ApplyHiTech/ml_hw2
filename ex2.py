@@ -57,14 +57,15 @@ class PacmanController(mdp.MDP):
         # make sure pacman exists
         if "pacman" in eval.special_things and eval.special_things["pacman"] is not 'dead':
             pacman_place = eval.special_things["pacman"]
-            # iterate over all possible ghosts
-            for color in GHOSTS:
-                # make sure ghost exists on board
-                if color in eval.special_things.keys():
-                    cur_ghost_place = eval.special_things[color]
+        # iterate over all possible ghosts
+        for color in GHOSTS:
+            # make sure ghost exists on board
+            if color in eval.special_things.keys():
+                cur_ghost_place = eval.special_things[color]
+                if 'pacman_place' in locals():
                     min_md = min(min_md,abs(pacman_place[0] - cur_ghost_place[0]) + abs(pacman_place[1] - cur_ghost_place[1]))
-                    # convert to relaxed state without any ghosts
-                    relaxed_eval.state[eval.special_things[color]] = relaxed_eval.state[eval.special_things[color]] - checker.COLOR_CODES[color]
+                # convert to relaxed state without any ghosts
+                relaxed_eval.state[eval.special_things[color]] = 10 + (relaxed_eval.state[eval.special_things[color]] - checker.COLOR_CODES[color])
 
         # relax poison dots:
         if "poison" in eval.special_things.keys():
@@ -74,9 +75,9 @@ class PacmanController(mdp.MDP):
                 else:
                     relaxed_eval.state[(cell[0], cell[1])] = 10
 
-        # go through eval-state and convert 50 -> 10 and 51 -> 11
 
-        return (relaxed_eval, min_md)
+
+        return (checker.Evaluator.state_to_agent(relaxed_eval), min_md)
 
     def compute_states(self):
         j = 0
@@ -103,7 +104,7 @@ class PacmanController(mdp.MDP):
                 curr_evalD = deepcopy(temp)
                 # apply different actions to each child
                 tmp_reward = curr_evalU.accumulated_reward
-                curr_state = checker.Evaluator.state_to_agent(temp)
+                curr_state = self.eval_state_to_ab_state_plus_md(temp)
 
                 checker.Evaluator.change_state_after_action(curr_evalU, "U")
                 if curr_evalU.accumulated_reward - tmp_reward >= 30:
@@ -113,10 +114,10 @@ class PacmanController(mdp.MDP):
                     empty_state.state[temp.special_things["pacman"]] = 10
                     empty_state.state[empty_state.special_things["pacman"]] = 66
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalU.accumulated_reward
-                    T[(curr_state, "U")] = (1, checker.Evaluator.state_to_agent(empty_state))
+                    T[(curr_state, "U")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
                 else:
-                    T[(curr_state, "U")] = (1, checker.Evaluator.state_to_agent(curr_evalU))
+                    T[(curr_state, "U")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalU))
 
                 tmp_reward = curr_evalL.accumulated_reward
                 checker.Evaluator.change_state_after_action(curr_evalL, "L")
@@ -127,10 +128,10 @@ class PacmanController(mdp.MDP):
                     empty_state.state[temp.special_things["pacman"]] = 10
                     empty_state.state[empty_state.special_things["pacman"]] = 66
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalL.accumulated_reward
-                    T[(curr_state, "L")] = (1, checker.Evaluator.state_to_agent(empty_state))
+                    T[(curr_state, "L")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
                 else:
-                    T[(curr_state, "L")] = (1, checker.Evaluator.state_to_agent(curr_evalL))
+                    T[(curr_state, "L")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalL))
 
 
                 tmp_reward = curr_evalR.accumulated_reward
@@ -143,10 +144,10 @@ class PacmanController(mdp.MDP):
                     empty_state.state[temp.special_things["pacman"]] = 10
                     empty_state.state[empty_state.special_things["pacman"]] = 66
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalR.accumulated_reward
-                    T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(empty_state))
+                    T[(curr_state, "R")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
                 else:
-                    T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(curr_evalR))
+                    T[(curr_state, "R")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalR))
 
 
 
@@ -159,14 +160,14 @@ class PacmanController(mdp.MDP):
                     empty_state.state[temp.special_things["pacman"]] = 10
                     empty_state.state[empty_state.special_things["pacman"]] = 66
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalD.accumulated_reward
-                    T[(curr_state, "D")] = (1, checker.Evaluator.state_to_agent(empty_state))
+                    T[(curr_state, "D")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
                 else:
-                    T[(curr_state, "D")] = (1, checker.Evaluator.state_to_agent(curr_evalD))
+                    T[(curr_state, "D")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalD))
 
                 child_evals = [curr_evalU, curr_evalL, curr_evalR, curr_evalD]
 
-                curr_state = checker.Evaluator.state_to_agent(temp)
+                curr_state = self.eval_state_to_ab_state_plus_md(temp)
 
                 R[curr_state] = temp.accumulated_reward
 
@@ -189,9 +190,10 @@ class PacmanController(mdp.MDP):
 
                         #return explored, T, R We should exit here, but then we have an issue with missing some states.
 
-
-                    if checker.Evaluator.state_to_agent(child) not in explored and child not in frontier:
-                        frontier.append(child)
+                    # we dont want to add states where pacman is dead:
+                    if "pacman" in child.special_things and child.special_things["pacman"] is not 'dead':
+                        if self.eval_state_to_ab_state_plus_md(child) not in explored and child not in frontier:
+                            frontier.append(child)
 
             print("Finished loop: States: "+ str(len(explored)) +" Queue: " + str(len(frontier)))
         #print(R)
