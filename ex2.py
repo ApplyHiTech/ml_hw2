@@ -52,6 +52,7 @@ class PacmanController(mdp.MDP):
         return
 
     def eval_state_to_ab_state_plus_md(self,eval):
+        # we assume that if pacman is dead then we return a relaxed version of the board
         min_md = 2**32-1
         relaxed_eval = deepcopy(eval)
         # make sure pacman exists
