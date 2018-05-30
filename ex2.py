@@ -74,8 +74,37 @@ class PacmanController(mdp.MDP):
                 curr_evalR = deepcopy(temp)
                 curr_evalD = deepcopy(temp)
                 # apply different actions to each child
+                tmp_reward = curr_evalU.accumulated_reward
+                curr_state = checker.Evaluator.state_to_agent(temp)
+
                 checker.Evaluator.change_state_after_action(curr_evalU, "U")
+                if curr_evalU.accumulated_reward - tmp_reward >= 30:
+                    # we force apply the state after applying the specific action which caused a reset.
+                    empty_state = deepcopy(temp)
+                    empty_state.special_things["pacman"] = (temp.special_things["pacman"][0]-1, temp.special_things["pacman"][1])
+                    empty_state.state[temp.special_things["pacman"]] = 10
+                    empty_state.state[empty_state.special_things["pacman"]] = 66
+                    R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalU.accumulated_reward
+                    T[(curr_state, "U")] = (1, checker.Evaluator.state_to_agent(empty_state))
+
+                else:
+                    T[(curr_state, "U")] = (1, checker.Evaluator.state_to_agent(curr_evalU))
+
+                tmp_reward = curr_evalL.accumulated_reward
                 checker.Evaluator.change_state_after_action(curr_evalL, "L")
+                if curr_evalL.accumulated_reward - tmp_reward >= 30:
+                    # we force apply the state after applying the specific action which caused a reset.
+                    empty_state = deepcopy(temp)
+                    empty_state.special_things["pacman"] = (temp.special_things["pacman"][0], temp.special_things["pacman"][1]-1)
+                    empty_state.state[temp.special_things["pacman"]] = 10
+                    empty_state.state[empty_state.special_things["pacman"]] = 66
+                    R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalL.accumulated_reward
+                    T[(curr_state, "L")] = (1, checker.Evaluator.state_to_agent(empty_state))
+
+                else:
+                    T[(curr_state, "L")] = (1, checker.Evaluator.state_to_agent(curr_evalL))
+
+
                 tmp_reward = curr_evalR.accumulated_reward
                 checker.Evaluator.change_state_after_action(curr_evalR, "R")
                 # handle special case where all the dots are eaten but the method resets the board:
@@ -86,8 +115,25 @@ class PacmanController(mdp.MDP):
                     empty_state.state[temp.special_things["pacman"]] = 10
                     empty_state.state[empty_state.special_things["pacman"]] = 66
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalR.accumulated_reward
-                checker.Evaluator.change_state_after_action(curr_evalD, "D")
+                    T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(empty_state))
 
+                else:
+                    T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(curr_evalR))
+
+
+                tmp_reward = curr_evalD.accumulated_reward
+                checker.Evaluator.change_state_after_action(curr_evalD, "D")
+                if curr_evalD.accumulated_reward - tmp_reward >= 30:
+                    # we force apply the state after applying the specific action which caused a reset.
+                    empty_state = deepcopy(temp)
+                    empty_state.special_things["pacman"] = (temp.special_things["pacman"][0]+1, temp.special_things["pacman"][1])
+                    empty_state.state[temp.special_things["pacman"]] = 10
+                    empty_state.state[empty_state.special_things["pacman"]] = 66
+                    R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalD.accumulated_reward
+                    T[(curr_state, "D")] = (1, checker.Evaluator.state_to_agent(empty_state))
+
+                else:
+                    T[(curr_state, "D")] = (1, checker.Evaluator.state_to_agent(curr_evalD))
 
                 child_evals = [curr_evalU, curr_evalL, curr_evalR, curr_evalD]
 
@@ -95,15 +141,15 @@ class PacmanController(mdp.MDP):
 
                 R[curr_state] = temp.accumulated_reward
 
-                T[(curr_state, "U")] = (1, checker.Evaluator.state_to_agent(curr_evalU))
-                T[(curr_state, "L")] = (1, checker.Evaluator.state_to_agent(curr_evalL))
-                T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(curr_evalR))
-                T[(curr_state, "D")] = (1, checker.Evaluator.state_to_agent(curr_evalD))
+                #T[(curr_state, "U")] = (1, checker.Evaluator.state_to_agent(curr_evalU))
+                #T[(curr_state, "L")] = (1, checker.Evaluator.state_to_agent(curr_evalL))
+                #T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(curr_evalR))
                 for child in child_evals:
                     # If all dots are eaten, the board resets.
                     # So, we check to see if any action resulted in a reset board.
                     # If yes, we have found a solution.
                     if child.state == self.eval.state and j > 1:
+                        explored.add(checker.Evaluator.state_to_agent(empty_state))
                         print("WAHOO\n\n\n\n")
                         print("FINISHED------")
                         #print(R)
