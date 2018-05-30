@@ -117,7 +117,7 @@ class PacmanController(mdp.MDP):
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalU.accumulated_reward
                     T[(curr_state, "U")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
-                else:
+                elif curr_evalU.special_things["pacman"] is not 'dead':
                     T[(curr_state, "U")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalU))
 
                 tmp_reward = curr_evalL.accumulated_reward
@@ -131,7 +131,7 @@ class PacmanController(mdp.MDP):
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalL.accumulated_reward
                     T[(curr_state, "L")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
-                else:
+                elif curr_evalL.special_things["pacman"] is not 'dead':
                     T[(curr_state, "L")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalL))
 
 
@@ -147,7 +147,7 @@ class PacmanController(mdp.MDP):
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalR.accumulated_reward
                     T[(curr_state, "R")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
-                else:
+                elif curr_evalR.special_things["pacman"] is not 'dead':
                     T[(curr_state, "R")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalR))
 
 
@@ -163,7 +163,7 @@ class PacmanController(mdp.MDP):
                     R[checker.Evaluator.state_to_agent(empty_state)] = curr_evalD.accumulated_reward
                     T[(curr_state, "D")] = (1, self.eval_state_to_ab_state_plus_md(empty_state))
 
-                else:
+                elif curr_evalD.special_things["pacman"] is not 'dead':
                     T[(curr_state, "D")] = (1, self.eval_state_to_ab_state_plus_md(curr_evalD))
 
                 child_evals = [curr_evalU, curr_evalL, curr_evalR, curr_evalD]
@@ -213,12 +213,13 @@ class PacmanController(mdp.MDP):
 
     def choose_next_action(self, state):
         state_of_board, special_things = checker.problem_to_state(state)
+        eval_state = checker.Evaluator(0, state, 1)
         if not "pacman" in special_things:
             # check if PACMAN is still in the game
             print("HELLO buddy")
             return "reset"
         # if pacman is still in the game, then, choose best next step.
-        return (self.pi[state])
+        return (self.pi[self.eval_state_to_ab_state_plus_md(eval_state)])
 
     def actions(self,state):
 
