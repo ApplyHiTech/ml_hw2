@@ -51,13 +51,40 @@ class PacmanController(mdp.MDP):
         print("end of initialization\n\n\n\n")
         return
 
+    def eval_state_to_ab_state_plus_md(self,eval):
+        min_md = 2**32-1
+        relaxed_eval = deepcopy(eval)
+        # make sure pacman exists
+        if "pacman" in eval.special_things and eval.special_things["pacman"] is not 'dead':
+            pacman_place = eval.special_things["pacman"]
+            # iterate over all possible ghosts
+            for color in GHOSTS:
+                # make sure ghost exists on board
+                if color in eval.special_things.keys():
+                    cur_ghost_place = eval.special_things[color]
+                    min_md = min(min_md,abs(pacman_place[0] - cur_ghost_place[0]) + abs(pacman_place[1] - cur_ghost_place[1]))
+                    # convert to relaxed state without any ghosts
+                    relaxed_eval.state[eval.special_things[color]] = relaxed_eval.state[eval.special_things[color]] - checker.COLOR_CODES[color]
+
+        # relax poison dots:
+        if "poison" in eval.special_things.keys():
+            for cell in eval.special_things["poison"]:
+                if eval.state[(cell[0], cell[1])] == 71:
+                    relaxed_eval.state[(cell[0], cell[1])] = 11
+                else:
+                    relaxed_eval.state[(cell[0], cell[1])] = 10
+
+        # go through eval-state and convert 50 -> 10 and 51 -> 11
+
+        return (relaxed_eval, min_md)
+
     def compute_states(self):
         j = 0
         # BFS
         a_eval = deepcopy(self.eval)
         frontier = FIFOQueue()
         frontier.append(a_eval)  # Eval
-        explored = set()  # Eval.state
+        explored = set()  # ABSTRACT ( Eval.state ) + MD
         T = {}
         R = {}
         while frontier and j < 10000:
@@ -66,7 +93,8 @@ class PacmanController(mdp.MDP):
             temp = frontier.pop()
 
             if "pacman" in temp.special_things and temp.special_things["pacman"] is not 'dead':
-                explored.add(checker.Evaluator.state_to_agent(temp))
+                explored.add(self.eval_state_to_ab_state_plus_md(temp))
+                #explored.add(checker.Evaluator.state_to_agent(temp))
 
                 # children
                 curr_evalU = deepcopy(temp)
@@ -121,6 +149,7 @@ class PacmanController(mdp.MDP):
                     T[(curr_state, "R")] = (1, checker.Evaluator.state_to_agent(curr_evalR))
 
 
+
                 tmp_reward = curr_evalD.accumulated_reward
                 checker.Evaluator.change_state_after_action(curr_evalD, "D")
                 if curr_evalD.accumulated_reward - tmp_reward >= 30:
@@ -149,7 +178,10 @@ class PacmanController(mdp.MDP):
                     # So, we check to see if any action resulted in a reset board.
                     # If yes, we have found a solution.
                     if child.state == self.eval.state and j > 1:
-                        explored.add(checker.Evaluator.state_to_agent(empty_state))
+                        # if a specific action doesnt change the board (such as moving into a wall) then the above if condition applies,
+                        # but empty_state doesn't exisrt
+                        if 'empty_state' in locals():
+                            explored.add(self.eval_state_to_ab_state_plus_md(empty_state))
                         print("WAHOO\n\n\n\n")
                         print("FINISHED------")
                         #print(R)
