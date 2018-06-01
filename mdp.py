@@ -21,7 +21,7 @@ class MDP:
     list of (p, s') pairs. We also keep track of the possible states,
     terminal states, and actions for each state. [page 646]"""
 
-    def __init__(self, init, actlist, terminals, transitions={}, states=None, gamma=.9):
+    def __init__(self, init, actlist, terminals, transitions={}, states=None, gamma=0.9):
         if not (0 < gamma <= 1):
             raise ValueError("An MDP must have 0 < gamma <= 1")
 
@@ -55,6 +55,7 @@ class MDP:
         if state in self.terminals:
             return [None]
         else:
+
             return self.actlist
 
 
@@ -125,6 +126,7 @@ def value_iteration(mdp, epsilon=0.001):
         U = U1.copy()
         delta = 0
         for s in mdp.states:
+
             U1[s] = R(s) + gamma * max([sum([p * U[s1] for (p, s1) in T(s, a)])
                                         for a in mdp.actions(s)])
             delta = max(delta, abs(U1[s] - U[s]))
@@ -137,7 +139,9 @@ def best_policy(mdp, U):
     as a mapping from state to action. (Equation 17.4)"""
     pi = {}
     for s in mdp.states:
+
         pi[s] = argmax(mdp.actions(s), key=lambda a: expected_utility(a, s, U, mdp))
+
     return pi
 
 
