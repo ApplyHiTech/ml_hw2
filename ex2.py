@@ -185,7 +185,7 @@ class PacmanController(mdp.MDP):
     def set_reward(self,accumulated_reward, manhattan_distance_to_ghost):
         if manhattan_distance_to_ghost < 2:
             #
-            return accumulated_reward - manhattan_distance_to_ghost
+            return accumulated_reward
         elif manhattan_distance_to_ghost < 4:
             #neutral
             return accumulated_reward + 0.5
