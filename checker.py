@@ -11,11 +11,6 @@ BLOCKING_CODES = (20, 21, 30, 31, 40, 41, 50, 51, 99)
 LOSS_INDEXES = (20, 21, 30, 31, 40, 41, 50, 51, 71, 77)
 COLOR_CODES = {"red": 50, "green": 40, "blue": 20, "yellow": 30}
 
-# def signal_handler(signum, frame):
-#     f.write('Simulation time-out')
-#     print('simulation time out')
-#     raise Exception("Timed out!")
-
 def problem_to_state(problem):
     """
 
@@ -292,8 +287,9 @@ if __name__ == '__main__':
 
     for problem, num_of_steps in problems:
         my_eval = Evaluator(ex2.PacmanController(problem, num_of_steps), problem, num_of_steps)
+        print(my_eval.special_things)
         results.append(my_eval.evaluate_agent())
-
+        break
     for number, result in enumerate(results):
         print("the result for input", number + 1, "is", result)
 
