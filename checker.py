@@ -221,10 +221,9 @@ if __name__ == '__main__':
         ((
             (99, 99, 99, 99, 99),
             (99, 11, 11, 11, 99),
-            (99, 11, 99, 66, 99),
-            (99, 11, 99, 10, 99),
-            (99, 10, 99, 10, 99),
-            (99, 99, 40, 77, 99),
+            (99, 99, 99, 66, 99),
+            (99, 99, 99, 99, 99),
+            (99, 99, 99, 99, 99),
             (99, 99, 99, 99, 99)
         ), 10),
 
@@ -289,7 +288,7 @@ if __name__ == '__main__':
         my_eval = Evaluator(ex2.PacmanController(problem, num_of_steps), problem, num_of_steps)
         print(my_eval.special_things)
         results.append(my_eval.evaluate_agent())
-        break
+
     for number, result in enumerate(results):
         print("the result for input", number + 1, "is", result)
 
