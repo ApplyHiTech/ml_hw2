@@ -220,6 +220,19 @@ class PacmanController(mdp.MDP):
             self.reward[state]=0
             return 0
 
+    def find_min_md_from_ghosts(self, eval_state):
+        min_md = 2**32-1
+        if not "pacman" in eval_state.special_things:
+            return -100
+        pacman_place = eval_state.special_things["pacman"]
+        for color in GHOSTS:
+            # make sure ghost exists on board
+            if color in eval_state.special_things.keys():
+                cur_ghost_place = eval_state.special_things[color]
+                min_md = min(min_md,abs(pacman_place[0] - cur_ghost_place[0]) + abs(pacman_place[1] - cur_ghost_place[1]))
+
+        return min_md
+
     def choose_next_action(self, state):
         state_of_board, special_things = checker.problem_to_state(state)
         eval_state = checker.Evaluator(0, state, 1)
@@ -229,6 +242,24 @@ class PacmanController(mdp.MDP):
         # if pacman is still in the game, then, choose best next step.
         s = self.eval_state_to_ab_state_plus_md(eval_state)
         if s  in self.pi:
+            new_min_md = 0
+            # check if we need to update R based on Ghost location:
+            min_md = self.find_min_md_from_ghosts(eval_state)
+            # we check if there any ghosts on the board, and if they are very close.
+            if min_md != -100 and min_md <=2:
+                print("performing update to R")
+                # start scanning for a better position
+                for action in ["U","L","R","D"]:
+                    child_eval = deepcopy(eval_state)
+                    checker.Evaluator.change_state_after_action(child_eval, action)
+                    temp_new_md = self.find_min_md_from_ghosts(child_eval)
+                    if temp_new_md != -100 and temp_new_md > new_min_md:
+                        new_min_md = temp_new_md
+                        next_state_md = self.eval_state_to_ab_state_plus_md(child_eval)
+                        self.rewards[next_state_md] = self.rewards[next_state_md] + 10*new_min_md
+                # TODO: we might be yeilding a state that didnt exist before
+                self.U = mdp.value_iteration(self)
+                self.pi = mdp.best_policy(self,self.U)
             return self.pi[s]
         else:
             a = ["U","D","L","R"]
