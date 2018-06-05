@@ -24,7 +24,9 @@ class PacmanController(mdp.MDP):
         self.eval = checker.Evaluator(0, problem, steps)
         self.act_list = ACT_LIST
         all_states, trans_dict, rewards = self.compute_states
-        mdp.MDP.__init__(self,init=start_state, actlist=["U", "D", "R", "L"], terminals=[], transitions=trans_dict, states=all_states, )
+        print(all_states)
+        print(rewards)
+        mdp.MDP.__init__(self,init=start_state, actlist=["U", "D", "R", "L"], terminals=[], transitions=trans_dict, states=all_states,gamma=0.01 )
 
         self.reward=rewards #mpd rewards dictionary
 
@@ -84,10 +86,15 @@ class PacmanController(mdp.MDP):
         frontier.append(a_eval)  # Eval
         explored = set()  # ABSTRACT ( Eval.state ) + MD
         possible_state = set() # we return this so we don't have any keyerror.
+
+        possible_state.add(("DEADEND"))
+        for i in possible_state:
+            print(i)
         T = {}
         R = {}
         start_time = time.time()
-        while frontier and time.time() - start_time < 40 :
+        flag = True
+        while flag and frontier and time.time() - start_time < 40 :
             temp_eval = frontier.pop()
             explored.add(self.eval_state_to_ab_state_plus_md(temp_eval)) # add state.
 
@@ -100,7 +107,7 @@ class PacmanController(mdp.MDP):
                 #print(before_action_h_value)
 
                 parent_state_md = self.eval_state_to_ab_state_plus_md(temp_eval)
-
+                parent_state_reward = temp_eval.accumulated_reward
                 # children
                 for action in ["U","L","R","D"]:
                     #print(action)
@@ -113,29 +120,29 @@ class PacmanController(mdp.MDP):
                     after_action_reward = child_eval.accumulated_reward
 
                     # Did the action finish the board?
-                    if checker.Evaluator.finished_the_game(child_eval):
 
-                    #if after_action_reward - before_action_h_value  >= 30:
-                        #print('SOMETHING STRANGE')
+                    if after_action_reward - parent_state_reward  >= 30:
+                        flag = False # found a solution
+                        print('SOMETHING STRANGE')
                         empty_state = deepcopy(temp_eval)
                         if action == "R":
                             #print("RIGHT")
-                            a = 1
-                            b = 0
+                            a = 0
+                            b = 1
                         elif action == "L":
                             #print("LEFT")
 
-                            a = -1
-                            b = 0
+                            a = 0
+                            b = -1
                         elif action == "U":
                             print("UP")
 
-                            a = 0
-                            b = 1
+                            a = -1
+                            b = 0
                         elif action == "D":
                             #print("DOWN")
-                            a = 0
-                            b = -1
+                            a = 1
+                            b = 0
                         else:
                             # ERROR
                             #print("There is an error")
@@ -147,12 +154,17 @@ class PacmanController(mdp.MDP):
                         empty_state.special_things["pacman"] = new_pacman_location
                         empty_state.state[old_pacman_location]=10
                         empty_state.state[new_pacman_location]=66
-                        R[self.eval_state_to_ab_state_plus_md(empty_state)]= after_action_reward
+                        R[self.eval_state_to_ab_state_plus_md(empty_state)]= after_action_reward*100
+                        print("REWARD %s " %after_action_reward)
 
                         T[(parent_state_md,action)]=(1,self.eval_state_to_ab_state_plus_md(empty_state))
 
                         explored.add(self.eval_state_to_ab_state_plus_md(empty_state))
+                        print(self.eval_state_to_ab_state_plus_md(empty_state))
+                        print("ADDED")
+                        print(len(possible_state))
                         possible_state.add(self.eval_state_to_ab_state_plus_md(empty_state))
+                        print(len(possible_state))
 
                     elif child_eval.special_things["pacman"] is not 'dead':
 
@@ -190,20 +202,22 @@ class PacmanController(mdp.MDP):
         #print("num ghosts %s"   % num_ghosts)
         #print("num pills %s " % num_pills)
         #print("min_dist %s " % min_dist)
-
-        return 10*accum_reward +1*min_dist + 50*num_pills + 5*num_ghosts
+        return 10 * accum_reward
+        #return 10*accum_reward +1*min_dist + 50*num_pills + 5*num_ghosts
 
     def T(self, state, action):
         if (state,action) in self.transitions:
             return [self.transitions[(state, action)]]
         else:
             #print("Not found T")
-            return [(1,state)]
+            return [(1,("DEADEND"))]
     def R(self, state):
         if state in self.reward:
             return self.reward[state]
         else:
             print("Not found R")
+            print(state)
+            self.reward[state]=0
             return 0
 
     def choose_next_action(self, state):
@@ -211,7 +225,6 @@ class PacmanController(mdp.MDP):
         eval_state = checker.Evaluator(0, state, 1)
         if not "pacman" in special_things:
             # check if PACMAN is still in the game
-            print("HELLO buddy")
             return "reset"
         # if pacman is still in the game, then, choose best next step.
         s = self.eval_state_to_ab_state_plus_md(eval_state)
@@ -219,6 +232,8 @@ class PacmanController(mdp.MDP):
             return self.pi[s]
         else:
             a = ["U","D","L","R"]
+            print("random chosen")
+            # maybe here we should go into a simple dfs to find rest of the route to finish the board? @meir
             index = random.randint(0,3)
             return a[index]
 
